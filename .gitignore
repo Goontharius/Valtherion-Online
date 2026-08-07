@@ -20,9 +20,9 @@ yarn-error.log*
 **/ios/Pods/
 **/ios/Podfile.lock
 **/ios/build/
-android/.gradle/
-android/.idea/
-android/local.properties
+**/android/.gradle/
+**/android/.idea/
+**/android/local.properties
 **/build/
 *.hprof
 
