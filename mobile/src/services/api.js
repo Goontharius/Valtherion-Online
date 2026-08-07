@@ -1,8 +1,18 @@
 import axios from 'axios';
+import { NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// In development, derive the backend host from the Metro bundler's host, so a
+// physical phone on the same Wi-Fi naturally reaches the dev machine without
+// hardcoding an IP. Falls back to localhost (emulator) if detection fails.
+let devHost = 'localhost';
+try {
+  const host = NativeModules.SourceCode?.scriptURL?.match(/^https?:\/\/([^/:]+)/)?.[1];
+  if (host) devHost = host;
+} catch (e) { /* fall back to localhost */ }
+
 const API_BASE_URL = __DEV__
-  ? 'http://localhost:8000'
+  ? `http://${devHost}:8000`
   : 'https://api.valtheriononline.com';
 
 const api = axios.create({

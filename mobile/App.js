@@ -17,6 +17,7 @@ import { setAuthenticated } from './src/store/playerSlice';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import GameScreen from './src/screens/GameScreen';
+import CombatScreen from './src/screens/CombatScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import InventoryScreen from './src/screens/InventoryScreen';
 import QuestsScreen from './src/screens/QuestsScreen';
@@ -70,7 +71,7 @@ function GameTabs() {
         },
       })}
     >
-      <Tab.Screen name="Game" component={GameScreen} />
+      <Tab.Screen name="Game" component={CombatScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
       <Tab.Screen name="Inventory" component={InventoryScreen} />
       <Tab.Screen name="Quests" component={QuestsScreen} />
