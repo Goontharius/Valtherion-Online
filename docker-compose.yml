@@ -1,0 +1,54 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: valtherion_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
+  backend:
+    build:
+      context: ./backend
+    container_name: valtherion_backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/valtherion}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: valtherion_watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 60 --cleanup
+
+  db:
+    image: postgres:15-alpine
+    container_name: valtherion_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: valtherion
+    volumes:
+      - valtherion_db_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: valtherion_redis
+    restart: unless-stopped
+
+volumes:
+  valtherion_db_data:
+  caddy_data:
+  caddy_config:
