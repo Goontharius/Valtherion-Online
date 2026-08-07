@@ -53,11 +53,14 @@ async def attack_monster(
     }
 
     damage_result = calculate_damage(player_stats, monster_stats, skill_id, is_pve=True)
-    monster_hp = monster.get("current_hp", monster["hp"])
-    if monster_hp <= 0:
-        monster_hp = monster["hp"]
-    monster_hp -= damage_result["damage"]
-    monster["current_hp"] = max(0, monster_hp)
+    monster_max_hp = monster["hp"]
+    # HP lives in the per-instance world-state store, NOT on the shared
+    # MONSTER_DATA/BOSS_DATA singleton. That removes the async data race: two
+    # concurrent attack handlers no longer interleave read/write on the same
+    # dict across an `await`. The store resets to max HP at fight start.
+    monster_hp = world_state.apply_damage_to_monster(
+        monster["name"], damage_result["damage"], monster_max_hp, instance_id=0
+    )
 
     monster_attack = monster["strength"] - current_player.constitution // 2
     player_damage = max(1, monster_attack + (monster["level"] - current_player.level) * 2)
@@ -68,12 +71,12 @@ async def attack_monster(
         "damage_dealt": damage_result["damage"],
         "critical": damage_result["critical"],
         "damage_received": player_damage,
-        "monster_hp": monster["current_hp"],
-        "monster_max_hp": monster["hp"],
+        "monster_hp": monster_hp,
+        "monster_max_hp": monster_max_hp,
         "player_hp": current_player.current_hp,
     }
 
-    if monster["current_hp"] <= 0:
+    if monster_hp <= 0:
         party_members = [current_player]
         party = None
         if current_player.party_id:
@@ -153,6 +156,11 @@ async def attack_monster(
             await world_state.mark_boss_defeated(
                 monster["name"], monster.get("region"), monster.get("respawn", 7200)
             )
+
+        # The fight is over — clear the instance so the next encounter starts
+        # at full HP instead of carrying a stale near-zero/zero value into the
+        # next call (fixes order-dependent state across concurrent fights).
+        world_state.reset_monster_hp(monster["name"], instance_id=0)
 
         result["monster_defeated"] = True
         result["experience_gained"] = experience_shares.get(current_player.id, 0)

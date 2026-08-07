@@ -37,9 +37,17 @@ async def _ensure_test_database():
 
 
 async def _reset_schema():
+    # Dispose the shared engine's pool BEFORE the schema drop. The in-process
+    # uvicorn server and the tests both use app.core.database.engine, so the pool
+    # holds several live connections; some carry RowExclusive locks from prior
+    # requests. A DROP SCHEMA ... CASCADE against that same pool deadlocks on
+    # those still-held locks. Disposing forces all pooled connections closed so
+    # the reset runs on a single fresh connection and commits cleanly.
+    await app_engine.dispose()
     async with app_engine.begin() as conn:
         await conn.execute(text("DROP SCHEMA public CASCADE"))
         await conn.execute(text("CREATE SCHEMA public"))
+    await app_engine.dispose()
 
 
 async def _flush_redis():

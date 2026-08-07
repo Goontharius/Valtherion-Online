@@ -1,6 +1,17 @@
 apply plugin: "com.android.application"
 apply plugin: "com.facebook.react"
 
+// Pin androidx.core so a transitive version cascade doesn't pull in a release
+// (1.16.0) that requires compileSdk 34, breaking the RN 0.72 / AGP 7.4.2 build.
+// 1.10.1 is compileSdk-33 safe and matches the versions this project was built
+// against. Applied project-wide as a resolution strategy.
+configurations.all {
+    resolutionStrategy {
+        force "androidx.core:core:1.10.1"
+        force "androidx.core:core-ktx:1.10.1"
+    }
+}
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -29,10 +40,7 @@ react {
     //   The command to run when bundling. By default is 'bundle'
     // bundleCommand = "ram-bundle"
     //
-    //   The path to the CLI configuration file. Default is empty.
-    // bundleConfig = file(../rn-cli.config.js)
-    //
-    //   The name of the generated asset file containing your JS bundle
+    //   The path to the generated asset file containing your JS bundle
     // bundleAssetName = "MyApplication.android.bundle"
     //
     //   The entry file for bundle generation. Default is 'index.android.js' or 'index.js'
@@ -62,7 +70,7 @@ def enableProguardInReleaseBuilds = false
  * `def jscFlavor = 'org.webkit:android-jsc-intl:+'`
  *
  * The international variant includes ICU i18n library and necessary data
- * allowing to use e.g. `Date.toLocaleString` and `String.localeCompare` that
+ * allowing to use e.g. `Date.toLocaleString` and `String.compareLocale` that
  * give correct results when using with locales other than en-US. Note that
  * this variant is about 6MiB larger per architecture than default.
  */

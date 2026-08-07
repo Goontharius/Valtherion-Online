@@ -4,7 +4,24 @@ Verifies the attack-monster endpoint against the full game-data contract:
 damage applied, monster defeat, XP awarded, loot returned with the keys the
 React Native client reads, and the level-up path.
 """
+import pytest_asyncio
 import helpers
+
+from app.services import world_state
+
+
+@pytest_asyncio.fixture(loop_scope="session", autouse=True)
+async def _clean_monster_hp():
+    """Reset in-memory monster HP before each PvE test.
+
+    The whole suite runs on a session-scoped event loop, so module-level state
+    used to leak across tests and produce order-dependent flakes. Even though
+    production now stores HP off the singletons, this guard keeps combat tests
+    hermetic regardless of production internals.
+    """
+    world_state.reset_all_monster_hp()
+    yield
+    world_state.reset_all_monster_hp()
 
 
 async def _attack(client, headers, monster_id, skill_id="power_strike"):
