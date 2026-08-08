@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, Form, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
@@ -56,11 +55,15 @@ async def register(player_data: PlayerCreate, db: AsyncSession = Depends(get_db)
 
 
 @router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Player).where(Player.username == form_data.username))
+async def login(
+    username: str = Form(...),
+    password: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Player).where(Player.username == username))
     player = result.scalar_one_or_none()
 
-    if not player or not verify_password(form_data.password, player.hashed_password):
+    if not player or not verify_password(password, player.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
 
     player.last_login = datetime.now(timezone.utc)

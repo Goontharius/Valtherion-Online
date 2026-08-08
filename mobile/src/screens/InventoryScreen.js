@@ -8,10 +8,12 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Image,
 } from 'react-native';
 import { useDispatch } from 'react-redux';
 import api from '../services/api';
 import { updateCurrency } from '../store/playerSlice';
+import { slotIcon, playSfx } from '../services/assets';
 
 const RARITY_COLORS = {
   Common: '#ffffff',
@@ -21,6 +23,19 @@ const RARITY_COLORS = {
   Legendary: '#ff8800',
   'God-Tier': '#ff0000',
 };
+
+// Map an inventory item's type to a bundled item icon. Consumables show the
+// bottle/sword variants; everything else falls back to a type-appropriate slot
+// icon so the same visual language is used across the game.
+const TYPE_ICONS = {
+  weapon: slotIcon('weapon'),
+  shield: slotIcon('shield'),
+  armor: slotIcon('chest'),
+  accessory: slotIcon('ring'),
+  consumable: slotIcon('weapon'),
+};
+
+const itemIcon = (item) => TYPE_ICONS[item?.type] || slotIcon('trinket');
 
 const EQUIPMENT_SLOTS = [
   ['weapon', 'Weapon'],
@@ -120,11 +135,13 @@ export default function InventoryScreen() {
       <TouchableOpacity
         key={item.id}
         style={[styles.itemCell, { borderColor: color }]}
-        onPress={() => setSelected(item.id)}
+        onPress={() => { playSfx(); setSelected(item.id); }}
       >
-        <Text style={[styles.itemIcon, { color }]}>
-          {item.name ? item.name.substring(0, 2).toUpperCase() : '??'}
-        </Text>
+        <Image
+          source={{ uri: itemIcon(item) }}
+          style={[styles.itemIcon, { backgroundColor: '#2a2a44' }]}
+          resizeMode="contain"
+        />
         <Text style={styles.itemName} numberOfLines={1}>
           {item.name}
         </Text>
@@ -166,9 +183,11 @@ export default function InventoryScreen() {
                   onPress={() => (item ? unequipItem(slot) : null)}
                   disabled={!item}
                 >
-                  <Text style={[styles.equipIcon, { color }]}>
-                    {item ? (item.name || '?').substring(0, 1).toUpperCase() : '+'}
-                  </Text>
+                  <Image
+                    source={{ uri: slotIcon(slot) }}
+                    style={[styles.equipIcon, { opacity: item ? 1 : 0.25 }]}
+                    resizeMode="contain"
+                  />
                   <Text style={styles.equipLabel} numberOfLines={1}>
                     {item ? item.name : label}
                   </Text>
@@ -206,9 +225,15 @@ export default function InventoryScreen() {
                   }
                 >
                   <Text style={[styles.hotbarNum, { color }]}>{slot}</Text>
-                  <Text style={styles.hotbarIcon} numberOfLines={1}>
-                    {item ? (item.name || '?').substring(0, 1).toUpperCase() : '·'}
-                  </Text>
+                  {item ? (
+                    <Image
+                      source={{ uri: itemIcon(item) }}
+                      style={styles.hotbarIcon}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <Text style={styles.hotbarEmpty} numberOfLines={1}>·</Text>
+                  )}
                 </TouchableOpacity>
               );
             })}
@@ -252,7 +277,7 @@ export default function InventoryScreen() {
                 selectedItem?.type === 'shield') && (
                 <TouchableOpacity
                   style={styles.actionButton}
-                  onPress={() => equipItem(selectedItem)}
+                  onPress={() => { playSfx(); equipItem(selectedItem); }}
                   disabled={busy}
                 >
                   <Text style={styles.actionText}>Equip</Text>
@@ -261,7 +286,7 @@ export default function InventoryScreen() {
               {selectedItem?.type === 'consumable' && (
                 <TouchableOpacity
                   style={styles.actionButton}
-                  onPress={() => consumeItem(selectedItem)}
+                  onPress={() => { playSfx(); consumeItem(selectedItem); }}
                   disabled={busy}
                 >
                   <Text style={styles.actionText}>Use</Text>
@@ -269,14 +294,14 @@ export default function InventoryScreen() {
               )}
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => assignHotbar(selectedItem)}
+                onPress={() => { playSfx(); assignHotbar(selectedItem); }}
                 disabled={busy}
               >
                 <Text style={styles.actionText}>Hotbar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => sellItem(selectedItem)}
+                onPress={() => { playSfx(); sellItem(selectedItem); }}
                 disabled={busy}
               >
                 <Text style={styles.actionText}>Sell</Text>
@@ -355,8 +380,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#1f1f3b',
   },
   equipIcon: {
-    fontSize: 20,
-    fontWeight: '700',
+    width: 34,
+    height: 34,
+    borderRadius: 8,
   },
   equipLabel: {
     color: '#ccc',
@@ -379,8 +405,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#1f1f3b',
   },
   itemIcon: {
-    fontSize: 22,
-    fontWeight: '700',
+    width: 44,
+    height: 44,
+    borderRadius: 10,
   },
   itemName: {
     color: '#ddd',
@@ -409,7 +436,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   hotbarIcon: {
-    color: '#ddd',
+    width: 26,
+    height: 26,
+    marginTop: 2,
+  },
+  hotbarEmpty: {
+    color: '#666',
     fontSize: 18,
     fontWeight: '700',
     marginTop: 2,

@@ -13,8 +13,11 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: valtherion_backend
+    ports:
+      - "8000:8000"
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/valtherion}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}

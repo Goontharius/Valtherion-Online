@@ -1,0 +1,17 @@
+# Build context is the repo root now. Keep the backend image lean by excluding
+# everything it doesn't need: JS tooling, mobile/android build artifacts, and
+# local venv / test / env files.
+.git
+**/node_modules
+mobile/android/app/build
+mobile/ios/build
+mobile/android/.gradle
+**/__pycache__
+**/*.pyc
+*.pyo
+backend/.env
+backend/.env.*
+backend/venv
+backend/.pytest_cache
+backend/tests
+.DS_Store

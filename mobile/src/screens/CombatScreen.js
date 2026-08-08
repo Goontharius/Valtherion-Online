@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
-  Alert, Animated, Easing,
+  Alert, Animated, Easing, Image,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import api from '../services/api';
+import { monsterSprite, playSfx } from '../services/assets';
 import { setPlayer } from '../store/playerSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -91,6 +92,7 @@ function CombatScreen({ route }) {
 
   const attack = async () => {
     if (attacking) return;
+    playSfx(); // tap/attack sound
     setAttacking(true);
     bounce.setValue(0);
     Animated.timing(bounce, { toValue: 1, duration: 160, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
@@ -185,6 +187,13 @@ function CombatScreen({ route }) {
 
       {/* Monster */}
       <View style={styles.monsterCard}>
+        <View style={styles.monsterSpriteWrap}>
+          <Image
+            source={{ uri: monsterSprite(monster.id) }}
+            style={styles.monsterSprite}
+            resizeMode="contain"
+          />
+        </View>
         <Text style={styles.monsterName}>{monster.name} · Lv {monster.level}</Text>
         <Text style={styles.monsterRegion}>{monster.region}</Text>
         <HpBar current={monsterHp ?? monster.hp} max={monsterMaxHp ?? monster.hp} color="#e67e22" />
@@ -205,7 +214,7 @@ function CombatScreen({ route }) {
             {MONSTER_DATA.map((m) => (
               <TouchableOpacity
                 key={m.id}
-                onPress={() => pickMonster(m.id)}
+                onPress={() => { playSfx(); pickMonster(m.id); }}
                 style={[styles.pickChip, m.id === monster.id && styles.pickChipActive]}
               >
                 <Text style={styles.pickChipText}>{m.name.split(' ')[0]}</Text>
@@ -218,7 +227,7 @@ function CombatScreen({ route }) {
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={[styles.autoBtn, autoAttack && styles.autoBtnOn]}
-            onPress={() => setAutoAttack((v) => !v)}
+            onPress={() => { playSfx(); setAutoAttack((v) => !v); }}
           >
             <Text style={styles.autoBtnText}>{autoAttack ? '⏸' : '▶'}</Text>
           </TouchableOpacity>
@@ -253,7 +262,15 @@ const styles = StyleSheet.create({
 
   monsterCard: {
     backgroundColor: '#1a1a2e', borderRadius: 16, padding: 14, marginBottom: 12,
-    borderWidth: 1, borderColor: '#2a2a3e',
+    borderWidth: 1, borderColor: '#2a2a3e', alignItems: 'center',
+  },
+  monsterSpriteWrap: {
+    width: 88, height: 88, borderRadius: 12, marginBottom: 8,
+    backgroundColor: '#0f0f1a', borderWidth: 1, borderColor: '#2a2a3e',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  monsterSprite: {
+    width: 64, height: 64,
   },
   monsterName: { color: '#fff', fontSize: 20, fontWeight: '700' },
   monsterRegion: { color: '#888', fontSize: 12, marginBottom: 8 },
